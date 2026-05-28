@@ -1,0 +1,64 @@
+{
+  "$schema": "https://app.tamarind.bio/tamarind-tool.schema.json",
+  "displayName": "SynFit-Predict",
+  "description": "Score protein variants with a trained SynFit multi-objective fitness model.",
+  "functions": [
+    "Loads a SynFit joint 2-head checkpoint (best_model.pth from Stage-2 training).",
+    "Computes per-objective fitness scores for each variant via masked log-likelihood ratios over the mutated positions.",
+    "Returns a CSV with one column per fitness objective and an optional non-dominated (Pareto-frontier) ranking.",
+    "Backbone is facebook/esm2_t33_650M_UR50D, pre-cached in the image (runtime has no internet).",
+    "Supports models trained with exactly 2 objectives - SynFit's joint head is hardcoded to 2 heads."
+  ],
+  "gpuType": "L4",
+  "cpu": 4,
+  "memory": "32Gi",
+  "inputs": [
+    {
+      "name": "checkpoint",
+      "displayName": "Trained joint checkpoint (.pth)",
+      "type": "file",
+      "required": true,
+      "descr": "best_model.pth produced by SynFit-Train (Stage-2 joint shared-module training)."
+    },
+    {
+      "name": "wt_sequence",
+      "displayName": "Wild-type protein sequence",
+      "type": "sequence",
+      "required": true,
+      "descr": "Single-letter amino-acid sequence the variants are defined relative to. Mutation indices are 1-indexed against this sequence."
+    },
+    {
+      "name": "variants_csv",
+      "displayName": "Variants CSV",
+      "type": "file",
+      "required": true,
+      "descr": "CSV with a 'mutant' column (e.g. 'A126C' or 'A126C:G130T' for multi-mutants). 'mutated_sequence' is built from wt_sequence + mutant if missing."
+    },
+    {
+      "name": "metric_names",
+      "displayName": "Objective names",
+      "type": "text",
+      "required": false,
+      "default": "objective_A,objective_B",
+      "descr": "Comma-separated names for the two objectives, in the order the model was trained (head A first, then head B). Used only for output column naming."
+    },
+    {
+      "name": "batch_size",
+      "displayName": "Batch size",
+      "type": "number",
+      "required": false,
+      "default": 8,
+      "lowerBound": 1,
+      "upperBound": 64,
+      "descr": "Sequences per forward pass. Lower if you hit GPU OOM on long proteins."
+    },
+    {
+      "name": "compute_pareto",
+      "displayName": "Compute Pareto ranking",
+      "type": "boolean",
+      "required": false,
+      "default": true,
+      "descr": "Add a 'pareto_rank' column via non-dominated sorting (1 = on the Pareto frontier)."
+    }
+  ]
+}
