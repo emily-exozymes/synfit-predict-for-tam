@@ -17,6 +17,7 @@
       "name": "checkpoint",
       "displayName": "Trained joint checkpoint (.pth)",
       "type": "file",
+      "extension": ["pth", "pt", "bin"],
       "required": true,
       "descr": "best_model.pth produced by SynFit-Train (Stage-2 joint shared-module training)."
     },
@@ -31,6 +32,7 @@
       "name": "variants_csv",
       "displayName": "Variants CSV",
       "type": "file",
+      "extension": ["csv"],
       "required": true,
       "descr": "CSV with a 'mutant' column (e.g. 'A126C' or 'A126C:G130T' for multi-mutants). 'mutated_sequence' is built from wt_sequence + mutant if missing."
     },
