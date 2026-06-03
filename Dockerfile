@@ -14,9 +14,19 @@ RUN micromamba install -y -n base -c conda-forge \
 
 ENV PATH=/opt/conda/bin:$PATH
 
-# PyTorch 2.4.0 + CUDA 12.1 wheels (matches SynFit README)
+# Pin HF cache so build-time pre-cache and runtime load look at the same
+# place (Tamarind runtime can run as a non-root user with HOME=/tmp).
+ENV HF_HOME=/opt/hf_cache
+ENV HUGGINGFACE_HUB_CACHE=/opt/hf_cache
+ENV TRANSFORMERS_CACHE=/opt/hf_cache
+
+# PyTorch 2.4.0 + CUDA 12.1 wheels (matches SynFit README).
+# Use --extra-index-url so PyPI stays in the search path for torch's
+# transitive deps (fsspec, sympy, etc.) - --index-url alone replaces PyPI
+# entirely and the build fails on missing fsspec.
 RUN pip install --no-cache-dir \
-    torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+    --extra-index-url https://download.pytorch.org/whl/cu121 \
+    torch==2.4.0
 
 # SynFit core deps (subset needed for inference; training-only deps trimmed)
 RUN pip install --no-cache-dir \
@@ -40,5 +50,8 @@ RUN pip install --no-cache-dir \
 RUN python -c "from transformers import EsmForMaskedLM, EsmTokenizer; \
     EsmForMaskedLM.from_pretrained('facebook/esm2_t33_650M_UR50D'); \
     EsmTokenizer.from_pretrained('facebook/esm2_t33_650M_UR50D')"
+
+# World-readable cache for non-root runtime user.
+RUN chmod -R a+rX /opt/hf_cache
 
 RUN mkdir -p inputs out && chmod -R 777 /app
