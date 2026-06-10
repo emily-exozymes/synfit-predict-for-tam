@@ -25,7 +25,17 @@ from transformers import EsmTokenizer, EsmConfig
 warnings.filterwarnings("ignore")
 
 # SynFit/ is on PYTHONPATH via run.sh, so we can import directly.
-from train_joint_shared_module import EsmForMaskedLM_2Head  # noqa: E402
+# BUT train_joint_shared_module.py runs argparse.parse_args() at module level
+# (it's normally invoked as a CLI script), so importing it would crash with
+# "argument --protein required" because OUR predict.py is called with no args.
+# Fake out sys.argv just for the duration of this import, then restore it.
+_orig_argv = sys.argv
+sys.argv = ["train_joint_shared_module.py", "--protein", "_import_only_",
+            "--fold", "0", "--seed", "42", "--gpus", "0"]
+try:
+    from train_joint_shared_module import EsmForMaskedLM_2Head  # noqa: E402
+finally:
+    sys.argv = _orig_argv
 
 # ---------- Inputs ----------
 WT_SEQ        = os.environ.get("wt_sequence", "").strip()
